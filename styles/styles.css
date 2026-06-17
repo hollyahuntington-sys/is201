@@ -1,0 +1,217 @@
+/* --------------------
+   Global Styles
+--------------------- */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6;
+    background-color: #fff8f8;
+    color: #333;
+}
+
+/* --------------------
+   Hero Section
+--------------------- */
+
+.hero {
+    background-image:
+        linear-gradient(
+            rgba(0,0,0,0.45),
+            rgba(0,0,0,0.45)
+        ),
+        url("https://media.istockphoto.com/id/1186323806/photo/couple-stay-on-the-beautiful-arch-looking-at-the-sea-in-iceland.jpg");
+
+    background-size: cover;
+    background-position: center;
+    height: 70vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+    color: white;
+}
+
+.hero-overlay {
+    padding: 20px;
+}
+
+.hero h1 {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.hero p {
+    font-family:Georgia, 'Times New Roman', Times, serif;
+    font-size: 1.2rem;
+}
+
+/* --------------------
+   Navigation
+--------------------- */
+
+nav {
+    background-color: #c0392b;
+    position: sticky;
+    top: 0;
+}
+
+nav ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    flex-wrap: wrap;
+}
+
+nav li {
+    margin: 12px;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+nav a:hover {
+    opacity: 0.8;
+}
+
+/* --------------------
+   Main Content
+--------------------- */
+
+main {
+    width: 90%;
+    max-width: 1000px;
+    margin: auto;
+    padding: 30px 0;
+}
+
+.card {
+    background-color: white;
+    margin-bottom: 25px;
+    padding: 25px;
+    border-radius: 12px;
+
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+
+    /* subtle animation */
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+h2 {
+    color: #c0392b;
+    margin-bottom: 15px;
+}
+
+h3 {
+    color: #1f5b39;
+}
+
+/* --------------------
+   Skills
+--------------------- */
+
+.skill-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.skill-box {
+    background-color: #f8d7da;
+    padding: 12px 18px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+/* --------------------
+   Experience
+--------------------- */
+
+.experience-item {
+    margin-bottom: 25px;
+}
+
+/* --------------------
+   Interests
+--------------------- */
+
+.interest-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.interest-list div {
+    background-color: #eef7f0;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+/* --------------------
+   Images
+--------------------- */
+
+.image-section {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.image-section img {
+    width: 100%;
+    max-width: 500px;
+
+    border-radius: 12px;
+
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* --------------------
+   Footer
+--------------------- */
+
+footer {
+    text-align: center;
+    padding: 25px;
+    background-color: #1f5b39;
+    color: white;
+}
+
+/* --------------------
+   Mobile Responsive
+--------------------- */
+
+@media (max-width: 768px) {
+
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .skill-container {
+        flex-direction: column;
+    }
+}

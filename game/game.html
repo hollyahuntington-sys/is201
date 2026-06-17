@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>State Flag Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================
+       STYLES
+  ============================================================ -->
+  <style>
+    /* ---------- Reset & Base ---------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #0D1B2A;
+      --navy-mid:  #162336;
+      --navy-card: #1E3050;
+      --gold:      #D4AF37;
+      --gold-pale: #F0D97A;
+      --red:       #C0392B;
+      --green:     #27AE60;
+      --white:     #F5F5F5;
+      --muted:     #8FA3BB;
+      --radius:    14px;
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--navy);
+      color: var(--white);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* Subtle star watermark via repeating radial gradient */
+      background-image:
+        radial-gradient(circle, rgba(212,175,55,0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ---------- Layout Shell ---------- */
+    #app {
+      width: 100%;
+      max-width: 680px;
+      padding: 24px 16px 48px;
+    }
+
+    /* ---------- Header ---------- */
+    header {
+      text-align: center;
+      padding: 32px 0 20px;
+    }
+    header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      color: var(--gold);
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+    header p {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 0.92rem;
+    }
+
+    /* ---------- HUD (score + timer) ---------- */
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--navy-card);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .hud-item { text-align: center; flex: 1; }
+    .hud-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .hud-value {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--gold);
+      transition: transform 0.15s;
+    }
+    /* Score "pulse" animation when points change */
+    .hud-value.pulse {
+      animation: scorePop 0.35s ease;
+    }
+    @keyframes scorePop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.3); color: var(--gold-pale); }
+      100% { transform: scale(1); }
+    }
+    /* Timer turns red when low */
+    #timer-val.warning { color: var(--red) !important; }
+
+    /* ---------- Card ---------- */
+    .card {
+      background: var(--navy-card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      margin-bottom: 16px;
+    }
+
+    /* ---------- Flag Display ---------- */
+    #flag-wrap {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #flag-img {
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 8px;
+      border: 2px solid rgba(212,175,55,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      object-fit: contain;
+      background: #fff;      /* flags look right on white */
+    }
+    #question-label {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      margin-top: 16px;
+      color: var(--white);
+      text-align: center;
+    }
+
+    /* ---------- Answer Buttons ---------- */
+    #choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .choice-btn {
+      background: var(--navy-mid);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 14px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--gold);
+      background: rgba(212,175,55,0.1);
+      transform: translateY(-1px);
+    }
+    .choice-btn:disabled { cursor: default; }
+    .choice-btn.correct {
+      border-color: var(--green);
+      background: rgba(39,174,96,0.18);
+      color: #7FFFB0;
+    }
+    .choice-btn.wrong {
+      border-color: var(--red);
+      background: rgba(192,57,43,0.18);
+      color: #FFB3AE;
+    }
+
+    /* ---------- Feedback Banner ---------- */
+    #feedback {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      min-height: 26px;
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 6px 12px;
+      transition: opacity 0.2s;
+    }
+    #feedback.correct { color: var(--green); }
+    #feedback.wrong   { color: var(--red); }
+
+    /* ---------- Bonus Round ---------- */
+    #bonus-section {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    #bonus-section.visible { display: flex; }
+
+    #bonus-section h2 {
+      font-family: var(--font-display);
+      color: var(--gold);
+      font-size: 1.3rem;
+      text-align: center;
+    }
+    #bonus-section p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    #capital-input {
+      width: 100%;
+      max-width: 340px;
+      background: var(--navy-mid);
+      border: 2px solid rgba(212,175,55,0.3);
+      border-radius: 8px;
+      color: var(--white);
+      font-size: 1rem;
+      padding: 12px 16px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #capital-input:focus { border-color: var(--gold); }
+    #capital-input::placeholder { color: var(--muted); }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-gold  { background: var(--gold); color: var(--navy); }
+    .btn-ghost { background: transparent; border: 2px solid var(--muted); color: var(--muted); }
+    .btn-ghost:hover { border-color: var(--white); color: var(--white); }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    /* ---------- Progress Bar ---------- */
+    #progress-wrap {
+      margin-bottom: 16px;
+    }
+    #progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    #progress-bar-bg {
+      background: var(--navy-mid);
+      border-radius: 99px;
+      height: 7px;
+      overflow: hidden;
+    }
+    #progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-pale));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ---------- Screens (Start / End) ---------- */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+      padding: 40px 24px;
+    }
+    .screen.active { display: flex; }
+
+    #start-screen h2, #end-screen h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      color: var(--gold);
+    }
+    #start-screen p, #end-screen p {
+      color: var(--muted);
+      max-width: 420px;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    /* Rules list */
+    .rules {
+      background: var(--navy-card);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      text-align: left;
+      width: 100%;
+      max-width: 400px;
+    }
+    .rules li {
+      list-style: none;
+      padding: 5px 0;
+      font-size: 0.9rem;
+      color: var(--white);
+      line-height: 1.5;
+    }
+    .rules li::before { content: "★ "; color: var(--gold); }
+
+    /* End screen score */
+    #final-score {
+      font-family: var(--font-display);
+      font-size: 4rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+    #final-grade {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-top: -8px;
+    }
+
+    /* ---------- Game area hidden by default ---------- */
+    #game-area { display: none; }
+    #game-area.active { display: block; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 480px) {
+      #choices { grid-template-columns: 1fr; }
+      #hud { padding: 10px 12px; }
+      .hud-value { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ====== HEADER ====== -->
+  <header>
+    <h1>★ State Flag Quiz ★</h1>
+    <p>How well do you know the 50 states?</p>
+  </header>
+
+  <!-- ====== START SCREEN ====== -->
+  <div id="start-screen" class="screen active">
+    <h2>Ready to Play?</h2>
+    <p>A flag appears. Pick the right state from 4 choices. Get it right and you unlock a bonus round to name the capital!</p>
+    <ul class="rules">
+      <li>Correct state → <strong>+10 points</strong></li>
+      <li>Bonus capital correct → <strong>+5 points</strong></li>
+      <li>Bonus capital wrong → <strong>−5 points</strong> (you can skip)</li>
+      <li>Capital answers are <strong>case-insensitive</strong></li>
+      <li>You have <strong>20 seconds</strong> per question</li>
+      <li>All 50 states, randomized order</li>
+    </ul>
+    <button class="btn btn-gold" onclick="startGame()">Start Quiz</button>
+  </div>
+
+  <!-- ====== GAME AREA ====== -->
+  <div id="game-area">
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-item">
+        <div class="hud-label">Score</div>
+        <div class="hud-value" id="score-val">0</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">Question</div>
+        <div class="hud-value" id="q-val">1 / 50</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">Time</div>
+        <div class="hud-value" id="timer-val">20</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="progress-wrap">
+      <div id="progress-label">
+        <span>Progress</span>
+        <span id="progress-text">0 of 50</span>
+      </div>
+      <div id="progress-bar-bg">
+        <div id="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Main question card -->
+    <div class="card" id="question-card">
+      <!-- Flag image -->
+      <div id="flag-wrap">
+        <img id="flag-img" src="" alt="State Flag" />
+        <div id="question-label">Which state does this flag belong to?</div>
+      </div>
+
+      <!-- 4 answer choices -->
+      <div id="choices"></div>
+
+      <!-- Feedback text -->
+      <div id="feedback"></div>
+    </div>
+
+    <!-- Bonus round card -->
+    <div class="card" id="bonus-card" style="display:none;">
+      <div id="bonus-section">
+        <h2>🏛 Bonus Round!</h2>
+        <p>You got it right! Name the capital of <strong id="bonus-state-name"></strong> for +5 points.<br>Skip to avoid the −5 risk.</p>
+        <input type="text" id="capital-input" placeholder="Type the capital…" autocomplete="off" />
+        <div id="bonus-feedback" style="min-height:22px; font-size:0.9rem;"></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="submitCapital()">Submit</button>
+          <button class="btn btn-ghost" onclick="skipBonus()">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- "Next question" button (shown after answer + bonus resolved) -->
+    <div class="btn-row" id="next-btn-row" style="display:none;">
+      <button class="btn btn-gold" onclick="nextQuestion()">Next Question →</button>
+    </div>
+
+  </div><!-- end #game-area -->
+
+  <!-- ====== END SCREEN ====== -->
+  <div id="end-screen" class="screen">
+    <h2>Quiz Complete!</h2>
+    <div id="final-score">0</div>
+    <div id="final-grade"></div>
+    <p id="end-summary"></p>
+    <button class="btn btn-gold" onclick="restartGame()">Play Again</button>
+  </div>
+
+</div><!-- end #app -->
+
+<!-- ============================================================
+     SCRIPT
+============================================================ -->
+<script>
+
+// ============================================================
+// DATA — All 50 states with their flag URLs and capitals
+// Flag images are fetched from Wikimedia Commons (public domain)
+// ============================================================
+// Flag paths point to your local PNG files.
+// Single-word states:  utah.png
+// Multi-word states:   north_dakota.png  (spaces replaced with underscores)
+// Keep this file in the same folder as your PNG files, or adjust the path prefix below.
+
+
+const STATES = [
+  { name: "Alabama",        capital: "Montgomery",    flag: "../flags/alabama.png" },
+  { name: "Alaska",         capital: "Juneau",        flag: "../flags/alaska.png" },
+  { name: "Arizona",        capital: "Phoenix",       flag: "../flags/arizona.png" },
+  { name: "Arkansas",       capital: "Little Rock",   flag: "../flags/arkansas.png" },
+  { name: "California",     capital: "Sacramento",    flag: "../flags/california.png" },
+  { name: "Colorado",       capital: "Denver",        flag: "../flags/colorado.png" },
+  { name: "Connecticut",    capital: "Hartford",      flag: "../flags/connecticut.png" },
+  { name: "Delaware",       capital: "Dover",         flag: "../flags/delaware.png" },
+  { name: "Florida",        capital: "Tallahassee",   flag: "../flags/florida.png" },
+  { name: "Georgia",        capital: "Atlanta",       flag: "../flags/georgia.png" },
+  { name: "Hawaii",         capital: "Honolulu",      flag: "../flags/hawaii.png" },
+  { name: "Idaho",          capital: "Boise",         flag: "../flags/idaho.png" },
+  { name: "Illinois",       capital: "Springfield",   flag: "../flags/illinois.png" },
+  { name: "Indiana",        capital: "Indianapolis",  flag: "../flags/indiana.png" },
+  { name: "Iowa",           capital: "Des Moines",    flag: "../flags/iowa.png" },
+  { name: "Kansas",         capital: "Topeka",        flag: "../flags/kansas.png" },
+  { name: "Kentucky",       capital: "Frankfort",     flag: "../flags/kentucky.png" },
+  { name: "Louisiana",      capital: "Baton Rouge",   flag: "../flags/louisiana.png" },
+  { name: "Maine",          capital: "Augusta",       flag: "../flags/maine.png" },
+  { name: "Maryland",       capital: "Annapolis",     flag: "../flags/maryland.png" },
+  { name: "Massachusetts",  capital: "Boston",        flag: "../flags/massachusetts.png" },
+  { name: "Michigan",       capital: "Lansing",       flag: "../flags/michigan.png" },
+  { name: "Minnesota",      capital: "Saint Paul",    flag: "../flags/minnesota.png" },
+  { name: "Mississippi",    capital: "Jackson",       flag: "../flags/mississippi.png" },
+  { name: "Missouri",       capital: "Jefferson City",flag: "../flags/missouri.png" },
+  { name: "Montana",        capital: "Helena",        flag: "../flags/montana.png" },
+  { name: "Nebraska",       capital: "Lincoln",       flag: "../flags/nebraska.png" },
+  { name: "Nevada",         capital: "Carson City",   flag: "../flags/nevada.png" },
+  { name: "New Hampshire",  capital: "Concord",       flag: "../flags/new_hampshire.png" },
+  { name: "New Jersey",     capital: "Trenton",       flag: "../flags/new_jersey.png" },
+  { name: "New Mexico",     capital: "Santa Fe",      flag: "../flags/new_mexico.png" },
+  { name: "New York",       capital: "Albany",        flag: "../flags/new_york.png" },
+  { name: "North Carolina", capital: "Raleigh",       flag: "../flags/north_carolina.png" },
+  { name: "North Dakota",   capital: "Bismarck",      flag: "../flags/north_dakota.png" },
+  { name: "Ohio",           capital: "Columbus",      flag: "../flags/ohio.png" },
+  { name: "Oklahoma",       capital: "Oklahoma City", flag: "../flags/oklahoma.png" },
+  { name: "Oregon",         capital: "Salem",         flag: "../flags/oregon.png" },
+  { name: "Pennsylvania",   capital: "Harrisburg",    flag: "../flags/pennsylvania.png" },
+  { name: "Rhode Island",   capital: "Providence",    flag: "../flags/rhode_island.png" },
+  { name: "South Carolina", capital: "Columbia",      flag: "../flags/south_carolina.png" },
+  { name: "South Dakota",   capital: "Pierre",        flag: "../flags/south_dakota.png" },
+  { name: "Tennessee",      capital: "Nashville",     flag: "../flags/tennessee.png" },
+  { name: "Texas",          capital: "Austin",        flag: "../flags/texas.png" },
+  { name: "Utah",           capital: "Salt Lake City",flag: "../flags/utah.png" },
+  { name: "Vermont",        capital: "Montpelier",    flag: "../flags/vermont.png" },
+  { name: "Virginia",       capital: "Richmond",      flag: "../flags/virginia.png" },
+  { name: "Washington",     capital: "Olympia",       flag: "../flags/washington.png" },
+  { name: "West Virginia",  capital: "Charleston",    flag: "../flags/west_virginia.png" },
+  { name: "Wisconsin",      capital: "Madison",       flag: "../flags/wisconsin.png" },
+  { name: "Wyoming",        capital: "Cheyenne",      flag: "../flags/wyoming.png" },
+];
+
+// ============================================================
+// GAME STATE — all the variables that track what's happening
+// ============================================================
+let score = 0;          // Player's current score
+let currentIndex = 0;   // Which question we're on (index into shuffledStates)
+let shuffledStates = []; // A randomized copy of all 50 states
+let timerInterval = null;// Holds the setInterval so we can stop it
+let timeLeft = 20;       // Seconds remaining for current question
+let answered = false;    // Did the player already click an answer?
+
+// ============================================================
+// UTILITY — Fisher-Yates shuffle (randomizes an array)
+// We make a copy first so we don't change the original STATES list
+// ============================================================
+function shuffle(array) {
+  const arr = [...array]; // copy
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]; // swap two elements
+  }
+  return arr;
+}
+
+// ============================================================
+// START GAME — called when player clicks "Start Quiz"
+// ============================================================
+function startGame() {
+  // Reset everything
+  score = 0;
+  currentIndex = 0;
+  shuffledStates = shuffle(STATES);
+
+  // Show game area, hide other screens
+  document.getElementById('start-screen').classList.remove('active');
+  document.getElementById('end-screen').classList.remove('active');
+  document.getElementById('game-area').classList.add('active');
+
+  updateHUD();
+  loadQuestion();
+}
+
+// ============================================================
+// LOAD QUESTION — sets up the flag image + 4 answer choices
+// ============================================================
+function loadQuestion() {
+  answered = false;
+
+  // Hide bonus and next button
+  document.getElementById('bonus-card').style.display = 'none';
+  document.getElementById('next-btn-row').style.display = 'none';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = '';
+
+  // Reset the bonus round so it works fresh every question.
+  // The submit/skip buttons get disabled after round 1 and need to be
+  // re-enabled here, otherwise they stay frozen for all future rounds.
+  document.getElementById('capital-input').disabled = false;
+  document.getElementById('capital-input').value = '';
+  document.getElementById('bonus-feedback').textContent = '';
+  document.querySelector('#bonus-section .btn-gold').disabled = false;
+  document.querySelector('#bonus-section .btn-ghost').disabled = false;
+  document.getElementById('bonus-section').classList.remove('visible');
+
+  // Get the correct state for this question
+  const correct = shuffledStates[currentIndex];
+
+  // Show the flag image
+  document.getElementById('flag-img').src = correct.flag;
+  document.getElementById('flag-img').alt = `Flag of ${correct.name}`;
+
+  // Build 4 choices: the correct one + 3 random wrong ones
+  const choices = buildChoices(correct);
+
+  // Render the choice buttons
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = ''; // clear old buttons
+
+  choices.forEach(function(state) {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = state.name;
+    // When clicked, check if this is the right answer
+    btn.addEventListener('click', function() { checkAnswer(state, btn, choices); });
+    choicesDiv.appendChild(btn);
+  });
+
+  // Update progress bar and HUD
+  updateHUD();
+  updateProgress();
+
+  // Start the countdown timer
+  startTimer();
+}
+
+// ============================================================
+// BUILD CHOICES — picks 3 wrong states + 1 correct, shuffled
+// ============================================================
+function buildChoices(correct) {
+  // Start with all states except the correct one
+  const others = STATES.filter(function(s) { return s.name !== correct.name; });
+  // Shuffle and grab 3 of them as wrong answers
+  const wrong = shuffle(others).slice(0, 3);
+  // Combine with the correct answer and shuffle again
+  return shuffle([correct, ...wrong]);
+}
+
+// ============================================================
+// CHECK ANSWER — called when a choice button is clicked
+// ============================================================
+function checkAnswer(selected, clickedBtn, allChoices) {
+  if (answered) return; // ignore extra clicks
+  answered = true;
+  stopTimer();
+
+  const correct = shuffledStates[currentIndex];
+  const isCorrect = selected.name === correct.name;
+
+  // Color all buttons: green for right, red for wrong
+  const allBtns = document.querySelectorAll('.choice-btn');
+  allBtns.forEach(function(btn) { btn.disabled = true; });
+
+  allChoices.forEach(function(state, i) {
+    const btn = allBtns[i];
+    if (state.name === correct.name) {
+      btn.classList.add('correct');
+    } else if (btn === clickedBtn && !isCorrect) {
+      btn.classList.add('wrong');
+    }
+  });
+
+  if (isCorrect) {
+    // Add 10 points
+    addPoints(10);
+    showFeedback('✓ Correct! +10 points', 'correct');
+    // Show the bonus round after a brief pause
+    setTimeout(showBonus, 600);
+  } else {
+    showFeedback(`✗ It was ${correct.name}`, 'wrong');
+    // Show the next button so they can move on
+    setTimeout(function() {
+      document.getElementById('next-btn-row').style.display = 'flex';
+    }, 600);
+  }
+}
+
+// ============================================================
+// TIMER — counts down from 20 seconds per question
+// ============================================================
+function startTimer() {
+  timeLeft = 20;
+  const timerEl = document.getElementById('timer-val');
+  timerEl.textContent = timeLeft;
+  timerEl.classList.remove('warning');
+
+  timerInterval = setInterval(function() {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+
+    // Turn red when 5 seconds or fewer remain
+    if (timeLeft <= 5) {
+      timerEl.classList.add('warning');
+    }
+
+    // Time's up! Treat as wrong answer
+    if (timeLeft <= 0) {
+      stopTimer();
+      if (!answered) {
+        answered = true;
+        const correct = shuffledStates[currentIndex];
+        showFeedback(`⏰ Time's up! It was ${correct.name}`, 'wrong');
+        // Highlight correct answer
+        document.querySelectorAll('.choice-btn').forEach(function(btn) {
+          btn.disabled = true;
+          if (btn.textContent === correct.name) btn.classList.add('correct');
+        });
+        setTimeout(function() {
+          document.getElementById('next-btn-row').style.display = 'flex';
+        }, 600);
+      }
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+// ============================================================
+// BONUS ROUND — shown after a correct answer
+// ============================================================
+function showBonus() {
+  const correct = shuffledStates[currentIndex];
+  document.getElementById('bonus-state-name').textContent = correct.name;
+  document.getElementById('capital-input').value = '';
+  document.getElementById('bonus-feedback').textContent = '';
+  document.getElementById('bonus-card').style.display = 'block';
+  document.getElementById('bonus-section').classList.add('visible');
+  // Focus the input so the player can start typing immediately
+  document.getElementById('capital-input').focus();
+}
+
+// Submit capital answer — called by the Submit button
+function submitCapital() {
+  const input = document.getElementById('capital-input').value.trim();
+  const correct = shuffledStates[currentIndex];
+  const bonusFeedback = document.getElementById('bonus-feedback');
+
+  if (!input) return; // don't submit empty
+
+  // Case-INSENSITIVE comparison (as requested)
+  const isCorrect = input.toLowerCase() === correct.capital.toLowerCase();
+
+  if (isCorrect) {
+    addPoints(5);
+    bonusFeedback.textContent = `✓ Correct! +5 points. The capital is ${correct.capital}.`;
+    bonusFeedback.style.color = 'var(--green)';
+  } else {
+    addPoints(-5);
+    bonusFeedback.textContent = `✗ Wrong! −5 points. The capital is ${correct.capital}.`;
+    bonusFeedback.style.color = 'var(--red)';
+  }
+
+  // Disable input and buttons so they can't resubmit
+  document.getElementById('capital-input').disabled = true;
+  document.querySelector('#bonus-section .btn-gold').disabled = true;
+  document.querySelector('#bonus-section .btn-ghost').disabled = true;
+
+  // Show next question button
+  setTimeout(function() {
+    document.getElementById('next-btn-row').style.display = 'flex';
+  }, 500);
+}
+
+// Skip bonus — player doesn't want to risk the -5
+function skipBonus() {
+  document.getElementById('bonus-feedback').textContent = `Skipped. The capital is ${shuffledStates[currentIndex].capital}.`;
+  document.getElementById('bonus-feedback').style.color = 'var(--muted)';
+  document.getElementById('capital-input').disabled = true;
+  document.querySelector('#bonus-section .btn-gold').disabled = true;
+  document.querySelector('#bonus-section .btn-ghost').disabled = true;
+  setTimeout(function() {
+    document.getElementById('next-btn-row').style.display = 'flex';
+  }, 400);
+}
+
+// Allow pressing Enter to submit the capital answer
+document.getElementById('capital-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitCapital();
+});
+
+// ============================================================
+// NEXT QUESTION — advance to the next state or end the game
+// ============================================================
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= shuffledStates.length) {
+    endGame();
+  } else {
+    loadQuestion();
+  }
+}
+
+// ============================================================
+// END GAME — show the final score screen
+// ============================================================
+function endGame() {
+  stopTimer();
+  document.getElementById('game-area').classList.remove('active');
+
+  const endScreen = document.getElementById('end-screen');
+  endScreen.classList.add('active');
+
+  document.getElementById('final-score').textContent = score;
+
+  // Calculate a grade / message based on score
+  // Max possible: 50 * 10 + 50 * 5 = 750 points
+  const maxScore = 750;
+  const pct = score / maxScore;
+  let grade = '';
+  if (pct >= 0.9)      grade = '🏆 Geography Legend!';
+  else if (pct >= 0.7) grade = '🌟 Flag Expert!';
+  else if (pct >= 0.5) grade = '📚 Getting There!';
+  else if (pct >= 0.3) grade = '🗺 Keep Studying!';
+  else                  grade = '😅 Better luck next time!';
+
+  document.getElementById('final-grade').textContent = grade;
+  document.getElementById('end-summary').textContent =
+    `You scored ${score} out of a possible ${maxScore} points across all 50 states.`;
+}
+
+// ============================================================
+// RESTART — goes back to the start screen
+// ============================================================
+function restartGame() {
+  document.getElementById('end-screen').classList.remove('active');
+  document.getElementById('start-screen').classList.add('active');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+// Add or subtract points and animate the score display
+function addPoints(amount) {
+  score += amount;
+  // Score can't go below 0
+  if (score < 0) score = 0;
+  updateHUD();
+  // Trigger the "pulse" animation on the score
+  const scoreEl = document.getElementById('score-val');
+  scoreEl.classList.remove('pulse');
+  // We remove and re-add the class so the animation re-fires
+  void scoreEl.offsetWidth; // forces browser to "reset" the animation
+  scoreEl.classList.add('pulse');
+}
+
+// Show feedback text below the choices
+function showFeedback(message, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = message;
+  el.className = type;
+}
+
+// Update the score + question number in the HUD
+function updateHUD() {
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('q-val').textContent = `${currentIndex + 1} / 50`;
+}
+
+// Update the progress bar fill
+function updateProgress() {
+  const pct = (currentIndex / 50) * 100;
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${currentIndex} of 50`;
+}
+
+</script>
+</body>
+</html>
